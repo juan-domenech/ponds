@@ -5,13 +5,23 @@ import os
 import datetime
 import sys
 import urllib2
-import ast
+import ast # String to Dictionary
 
 DEBUG = 1
 
 class API(object):
 
-    def __init__(self):
+    def __init__(self, pair):
+
+        if pair == 'EURBTC':
+            self.pair = 'XBTEUR'
+        elif pair != 'BTCEUR':
+            print "ERROR Unknown pair",pair
+            sys.exit(1)
+        else:
+            self.pair = 'XBTEUR'
+
+        self.name = 'kraken'
 
         # Get credentials from Environment Variables
         self.KRAKEN_ACCESS_KEY = os.getenv('KRAKEN_ACCESS_KEY')
@@ -42,11 +52,34 @@ class API(object):
 
         response = ast.literal_eval(urllib2.urlopen(self.root_url+'/public/Time').read())
         if response['error']:
-            print "ERROR system_time_epoch():",response
+            print "ERROR "+self.name+".system_time_epoch():",response
             sys.exit(1)
         else:
             # {'result': {'unixtime': 1471293119, 'rfc1123': 'Mon, 15 Aug 16 20:31:59 +0000'}, 'error': []}
             return int(response['result']['unixtime'])
+
+
+    def ticker(self):
+        # https://www.kraken.com/help/api#get-ticker-info
+        # {"error":[],"result":{"XXBTZEUR":{"a":["525.99900","1","1.000"],"b":["525.70000","1","1.000"],"c":["525.99900","0.04401000"],"v":["1033.95355743","1844.02477478"],"p":["526.62096","526.40549"],"t":[1652,3126],"l":["523.00000","523.00000"],"h":["528.98000","528.98000"],"o":"526.87100"}}}
+
+        ticker = {}
+
+        response = ast.literal_eval(urllib2.urlopen(self.root_url+'/public/Ticker?pair='+self.pair).read())
+        if response['error']:
+            print "ERROR "+self.name+".ticker():",response
+            sys.exit(1)
+        else:
+            ticker['ask'] = float(response['result']['XXBTZEUR']['a'][0])
+            ticker['bid'] = float(response['result']['XXBTZEUR']['b'][0])
+            ticker['volume_today'] = float(response['result']['XXBTZEUR']['v'][0])
+            ticker['volume_24h'] = float(response['result']['XXBTZEUR']['v'][1])
+            return ticker
+
+
+    # def transactions(self):
+
+
 
 
 
