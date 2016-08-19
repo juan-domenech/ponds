@@ -4,22 +4,20 @@ import os
 import datetime
 import sys
 
-DEBUG = 1
-
-
-def debug(message):
-    if DEBUG:
-        print 'DEBUG '+message
-
-def error(message):
-    print 'ERROR '+message
-
-
 class API(object):
 
-    def __init__(self, pair):
+    def __init__(self, pair,DEBUG=0):
+
+        def debug(message):
+            if DEBUG:
+                print 'DEBUG '+message
+
+        def error(message):
+            print 'ERROR '+message
 
         self.name = 'local'
+
+        debug(self.name+' Init')
 
         if pair == 'EURBTC':
             self.pair = 'BTCEUR'
@@ -40,8 +38,8 @@ class API(object):
             error('ERROR '+self.name+' Environment variable LOCAL_SECRET_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
 
-        debug(self.name+'LOCAL_ACCESS_KEY: '+self.LOCAL_ACCESS_KEY)
-        debug(self.name+'LOCAL_SECRET_KEY: '+self.LOCAL_SECRET_KEY)
+        debug(self.name+' LOCAL_ACCESS_KEY: '+self.LOCAL_ACCESS_KEY)
+        debug(self.name+' LOCAL_SECRET_KEY: '+'*'*(len(self.LOCAL_SECRET_KEY)-3)+self.LOCAL_SECRET_KEY[-3:])
 
 
 

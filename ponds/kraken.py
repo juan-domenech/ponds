@@ -7,22 +7,20 @@ import sys
 import urllib2
 import ast # String to Dictionary
 
-DEBUG = 1
-
-
-def debug(message):
-    if DEBUG:
-        print 'DEBUG '+message
-
-def error(message):
-    print 'ERROR '+message
-
-
 class API(object):
 
-    def __init__(self, pair):
+    def __init__(self, pair, DEBUG=0):
+
+        def debug(message):
+            if DEBUG:
+                print 'DEBUG '+message
+
+        def error(message):
+            print 'ERROR '+message
 
         self.name = 'kraken'
+
+        debug(self.name+' Init')
 
         if pair == 'EURBTC':
             self.pair = 'XBTEUR'
@@ -43,8 +41,8 @@ class API(object):
             error(self.name+' Environment variable KRAKEN_SECRET_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
 
-        debug(self.name+'LOCAL_ACCESS_KEY: '+self.KRAKEN_ACCESS_KEY)
-        debug(self.name+'LOCAL_SECRET_KEY: '+self.KRAKEN_SECRET_KEY)
+        debug(self.name+' KRAKEN_ACCESS_KEY: '+self.KRAKEN_ACCESS_KEY)
+        debug(self.name+' KRAKEN_SECRET_KEY: '+'*'*(len(self.KRAKEN_SECRET_KEY)-3)+self.KRAKEN_SECRET_KEY[-3:])
 
         self.root_url = 'https://api.kraken.com/0'
 
