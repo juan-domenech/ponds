@@ -9,34 +9,42 @@ import ast # String to Dictionary
 
 DEBUG = 1
 
+
+def debug(message):
+    if DEBUG:
+        print 'DEBUG '+message
+
+def error(message):
+    print 'ERROR '+message
+
+
 class API(object):
 
     def __init__(self, pair):
 
+        self.name = 'kraken'
+
         if pair == 'EURBTC':
             self.pair = 'XBTEUR'
         elif pair != 'BTCEUR':
-            print "ERROR Unknown pair",pair
+            error(self.name+'init() Unknown pair '+pair)
             sys.exit(1)
         else:
             self.pair = 'XBTEUR'
-
-        self.name = 'kraken'
 
         # Get credentials from Environment Variables
         self.KRAKEN_ACCESS_KEY = os.getenv('KRAKEN_ACCESS_KEY')
         self.KRAKEN_SECRET_KEY = os.getenv('KRAKEN_SECRET_KEY')
 
         if self.KRAKEN_ACCESS_KEY == None:
-            print "ERROR Environment variable KRAKEN_ACCESS_KEY not found. Please make sure this variable is loaded in memory."
+            error(self.name+' Environment variable KRAKEN_ACCESS_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
         if self.KRAKEN_SECRET_KEY == None:
-            print "ERROR Environment variable KRAKEN_SECRET_KEY not found. Please make sure this variable is loaded in memory."
+            error(self.name+' Environment variable KRAKEN_SECRET_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
 
-        if DEBUG:
-            print 'LOCAL_ACCESS_KEY:',self.KRAKEN_ACCESS_KEY
-            print 'LOCAL_SECRET_KEY:',self.KRAKEN_SECRET_KEY
+        debug(self.name+'LOCAL_ACCESS_KEY: '+self.KRAKEN_ACCESS_KEY)
+        debug(self.name+'LOCAL_SECRET_KEY: '+self.KRAKEN_SECRET_KEY)
 
         self.root_url = 'https://api.kraken.com/0'
 
@@ -45,6 +53,8 @@ class API(object):
     def system_time(self):
         return datetime.datetime.utcnow()
 
+    def now_milliseconds(self):
+        return int(datetime.datetime.utcnow().strftime('%s%f')[:-3])
 
     # Epoch (seconds)
     def system_time_epoch(self):
@@ -72,6 +82,7 @@ class API(object):
         else:
             ticker['ask'] = float(response['result']['XXBTZEUR']['a'][0])
             ticker['bid'] = float(response['result']['XXBTZEUR']['b'][0])
+            ticker['last'] = float(response['result']['XXBTZEUR']['c'][0])
             ticker['volume_today'] = float(response['result']['XXBTZEUR']['v'][0])
             ticker['volume_24h'] = float(response['result']['XXBTZEUR']['v'][1])
             return ticker
