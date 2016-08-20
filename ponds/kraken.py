@@ -7,18 +7,25 @@ import sys
 import urllib2
 import ast # String to Dictionary
 
+DEBUG=0
+
+def debug(message):
+    if DEBUG:
+        print 'DEBUG '+message
+
+def error(message):
+    print 'ERROR '+message
+
+def system_epoch_milliseconds():
+    return int(datetime.datetime.utcnow().strftime('%s%f')[:-3])
+
+
 class API(object):
 
     def __init__(self, pair, DEBUG=0):
 
-        def debug(message):
-            if DEBUG:
-                print 'DEBUG '+message
-
-        def error(message):
-            print 'ERROR '+message
-
         self.name = 'kraken'
+        self.limit_milliseconds = 1000 # Throttling limit ms
 
         debug(self.name+' Init')
 
@@ -37,34 +44,64 @@ class API(object):
         if self.KRAKEN_ACCESS_KEY == None:
             error(self.name+' Environment variable KRAKEN_ACCESS_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
+        debug(self.name+' KRAKEN_ACCESS_KEY: '+self.KRAKEN_ACCESS_KEY)
+
         if self.KRAKEN_SECRET_KEY == None:
             error(self.name+' Environment variable KRAKEN_SECRET_KEY not found. Please make sure this variable is loaded in memory.')
             sys.exit(1)
-
-        debug(self.name+' KRAKEN_ACCESS_KEY: '+self.KRAKEN_ACCESS_KEY)
         debug(self.name+' KRAKEN_SECRET_KEY: '+'*'*(len(self.KRAKEN_SECRET_KEY)-3)+self.KRAKEN_SECRET_KEY[-3:])
 
         self.root_url = 'https://api.kraken.com/0'
 
+        self.global_nonce = system_epoch_milliseconds()
+        debug(self.name+' init global_nonce '+str(self.global_nonce))
+
+        # Initialize system_time_epoch()
+        self.system_time_epoch_nonce = self.global_nonce - self.limit_milliseconds
+        self.system_time_epoch_cached = None
 
 
-    def system_time(self):
-        return datetime.datetime.utcnow()
+    # def system_time(self):
+    #     return datetime.datetime.utcnow()
+
 
     def now_milliseconds(self):
         return int(datetime.datetime.utcnow().strftime('%s%f')[:-3])
 
-    # Epoch (seconds)
-    def system_time_epoch(self):
-        # https://www.kraken.com/help/api#get-server-time
 
-        response = ast.literal_eval(urllib2.urlopen(self.root_url+'/public/Time').read())
-        if response['error']:
-            print "ERROR "+self.name+".system_time_epoch():",response
-            sys.exit(1)
+    # Epoch (seconds)
+    # https://www.kraken.com/help/api#get-server-time
+    def system_time_epoch(self):
+
+        debug(self.name+' system_time_epoch self.system_time_epoch_nonce '+str(self.system_time_epoch_nonce ))
+
+        # Get current system time epoch milliseconds
+        system_epoch_milliseconds_variable = system_epoch_milliseconds()
+
+        # If less than 1000 ms have passed
+        if ( system_epoch_milliseconds_variable - self.system_time_epoch_nonce ) < self.limit_milliseconds:
+            # Throttle and return cached value
+            debug(self.name+' system_time_epoch throttling '+str(system_epoch_milliseconds_variable - self.system_time_epoch_nonce )+' '+str(self.limit_milliseconds))
+            return {'error': '', 'epoch': self.system_time_epoch_cached, 'throttled': True}
+
         else:
-            # {'result': {'unixtime': 1471293119, 'rfc1123': 'Mon, 15 Aug 16 20:31:59 +0000'}, 'error': []}
-            return int(response['result']['unixtime'])
+            # We are good. Return a fresh value.
+            # Current time to nonce to use it on the next execution
+            self.system_time_epoch_nonce = system_epoch_milliseconds_variable
+
+            # Get fresh value and return it
+            response = ast.literal_eval(urllib2.urlopen(self.root_url+'/public/Time').read())
+            if response['error']:
+                error('ERROR '+self.name+'.system_time_epoch(): '+response)
+                sys.exit(1)
+            else:
+                ### {'result': {'unixtime': 1471293119, 'rfc1123': 'Mon, 15 Aug 16 20:31:59 +0000'}, 'error': []}
+                debug(self.name+' system_time_epoch result: '+str(response['result']))
+                self.system_time_epoch_cached = int(response['result']['unixtime'])
+
+                debug(self.name+' system_time_epoch '+str(self.system_time_epoch_cached))
+
+                return {'error': '', 'epoch': self.system_time_epoch_cached, 'throttled': False}
 
 
     def ticker(self):

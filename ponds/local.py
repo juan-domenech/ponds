@@ -53,6 +53,8 @@ class API(object):
 
         # Initialize system_time_epoch()
         self.system_time_epoch_nonce = self.global_nonce - self.limit_milliseconds
+        self.system_time_epoch_cached = None
+
 
 
     # def system_time(self):
@@ -71,7 +73,7 @@ class API(object):
         if ( system_epoch_milliseconds_variable - self.system_time_epoch_nonce ) < self.limit_milliseconds:
             # Throttle and return cached value
             debug(self.name+' system_time_epoch throttling '+str(system_epoch_milliseconds_variable - self.system_time_epoch_nonce )+' '+str(self.limit_milliseconds))
-            return self.system_time_epoch_cached
+            return {'error': '', 'epoch': self.system_time_epoch_cached, 'throttled': True}
 
         else:
             # We are good. Return a fresh value.
@@ -82,5 +84,5 @@ class API(object):
             self.system_time_epoch_cached = int(datetime.datetime.utcnow().strftime('%s%f')[:-6])
             debug(self.name+' system_time_epoch '+str(self.system_time_epoch_cached))
 
-            return self.system_time_epoch_cached
+            return {'error':'', 'epoch': self.system_time_epoch_cached, 'throttled': False}
 
