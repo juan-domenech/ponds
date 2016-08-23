@@ -3,6 +3,7 @@
 import os
 import datetime
 import sys
+import ast # String to Dictionary
 
 DEBUG = 1
 
@@ -15,6 +16,16 @@ def error(message):
 
 def system_epoch_milliseconds():
     return int(datetime.datetime.utcnow().strftime('%s%f')[:-3])
+
+# def need_throttling(nonce):
+#
+#     # Get current system time epoch milliseconds
+#     current_epoch_milliseconds = system_epoch_milliseconds()
+#     # If less than 1000 ms have passed
+#     if ( current_epoch_milliseconds - nonce ) <= self.limit_milliseconds:
+#         return True
+#     else:
+#         return False
 
 
 class API(object):
@@ -54,7 +65,9 @@ class API(object):
         # Initialize system_time_epoch()
         self.system_time_epoch_nonce = self.global_nonce - self.limit_milliseconds
         self.system_time_epoch_cached = None
-
+        # Initialize ticker()
+        self.ticker_nonce = self.global_nonce - self.limit_milliseconds
+        self.ticker_cached = None
 
 
     # def system_time(self):
@@ -73,7 +86,7 @@ class API(object):
         if ( system_epoch_milliseconds_variable - self.system_time_epoch_nonce ) < self.limit_milliseconds:
             # Throttle and return cached value
             debug(self.name+' system_time_epoch throttling '+str(system_epoch_milliseconds_variable - self.system_time_epoch_nonce )+' '+str(self.limit_milliseconds))
-            return {'error': '', 'epoch': self.system_time_epoch_cached, 'throttled': True}
+            return {'error': None, 'epoch': self.system_time_epoch_cached, 'throttled': True}
 
         else:
             # We are good. Return a fresh value.
@@ -84,5 +97,38 @@ class API(object):
             self.system_time_epoch_cached = int(datetime.datetime.utcnow().strftime('%s%f')[:-6])
             debug(self.name+' system_time_epoch '+str(self.system_time_epoch_cached))
 
-            return {'error':'', 'epoch': self.system_time_epoch_cached, 'throttled': False}
+            return {'error': None, 'epoch': self.system_time_epoch_cached, 'throttled': False}
 
+
+    def ticker(self):
+
+        debug(self.name+' ticker self.ticker_nonce '+str(self.ticker_nonce ))
+
+        system_epoch_milliseconds_variable = system_epoch_milliseconds()
+
+        if ( system_epoch_milliseconds_variable - self.ticker_nonce ) < self.limit_milliseconds:
+            debug(self.name+' ticker throttling '+str(system_epoch_milliseconds_variable - self.ticker_nonce )+' '+str(self.limit_milliseconds))
+            self.ticker_cached['throttled'] = True
+            # Dict to Str and back to Dict... Sorry :(
+            ticker = ast.literal_eval(str(self.ticker_cached))
+            ticker['throttled'] = True
+            return ticker
+
+        else:
+            self.ticker_nonce = system_epoch_milliseconds_variable
+
+            ticker = {}
+            ticker['ask'] = 515.0
+            ticker['bid'] = 513.63
+            ticker['last'] = 515.0
+            # ticker['volume_today'] = 0
+            ticker['volume_24h'] = 1923.04683459
+            ticker['low_24h'] = 507.9
+            ticker['high_24h'] = 518.05
+            ticker['error'] = None
+            ticker['throttled'] = False
+
+            self.ticker_cached = ticker
+            debug(self.name+' ticker '+str(self.ticker_cached))
+
+            return ticker
